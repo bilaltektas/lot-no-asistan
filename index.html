@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lot Sorgulama - Pro Dashboard</title>
+<title>Lot Tracking Ultra UI</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -12,104 +12,94 @@
 body {
   margin:0;
   font-family: Inter;
-  background: linear-gradient(135deg, #0b1220, #0f1b33);
+  background: radial-gradient(circle at top, #0f172a, #020617);
   color:#fff;
 }
 
 .header {
-  padding:18px;
-  font-size:20px;
+  padding:20px;
+  text-align:center;
+  font-size:22px;
   font-weight:700;
-  text-align:center;
-  letter-spacing:0.5px;
+  background: linear-gradient(90deg,#38bdf8,#6366f1);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
 }
 
-.status {
-  text-align:center;
-  font-size:13px;
-  opacity:0.7;
-}
-
-.searchBox {
-  padding:15px;
-}
+.status { text-align:center; font-size:13px; opacity:0.7; }
+.searchBox { padding:15px; }
 
 input {
-  width:100%;
-  padding:16px;
-  border-radius:14px;
-  border:none;
-  outline:none;
-  font-size:16px;
-  color:#fff;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(10px);
+  width:100%; padding:16px; border-radius:16px; border:none;
+  outline:none; font-size:16px; color:#fff;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
 }
 
-.grid {
-  padding:10px;
-}
+.grid { padding:10px; }
 
 .card {
-  margin:12px;
-  padding:16px;
-  border-radius:18px;
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  animation: fade 0.35s ease;
+  margin:14px; padding:18px; border-radius:20px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: fade 0.4s ease;
 }
 
 @keyframes fade {
-  from {opacity:0; transform:translateY(10px)}
+  from {opacity:0; transform:translateY(20px)}
   to {opacity:1; transform:translateY(0)}
 }
 
-.title {
-  font-weight:700;
-  font-size:18px;
-  color:#7dd3fc;
-}
-
-.tag {
-  display:inline-block;
-  padding:6px 10px;
-  border-radius:10px;
-  background: rgba(0,180,255,0.15);
-  margin-top:8px;
-  font-size:12px;
-}
+.title { font-weight:700; font-size:18px; color:#38bdf8; }
 
 .box {
-  margin-top:10px;
+  margin-top:10px; padding:12px; border-radius:14px;
+  background: rgba(56,189,248,0.08);
+}
+
+.small { font-size:13px; opacity:0.85; margin-top:6px; }
+
+.relation {
+  display:flex; align-items:center; justify-content:center;
+  gap:12px; margin-top:12px; flex-wrap:wrap;
+}
+
+.lotBox {
+  padding:10px 16px; border-radius:14px;
+  background: linear-gradient(135deg,#1e3a8a,#0ea5e9);
+  font-size:13px; font-weight:600;
+  box-shadow:0 6px 20px rgba(0,0,0,0.5);
+}
+
+.equal {
+  font-size:20px; font-weight:700; color:#22d3ee;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,100% {opacity:0.5}
+  50% {opacity:1}
+}
+
+.total {
+  margin-top:12px;
   padding:10px;
   border-radius:12px;
-  background: rgba(255,255,255,0.05);
-}
-
-.small {
-  font-size:13px;
-  opacity:0.85;
-  margin-top:5px;
-}
-
-.multi {
-  margin-top:10px;
-  padding:10px;
-  border-left:3px solid #38bdf8;
-  background: rgba(56,189,248,0.08);
-  border-radius:10px;
+  background: linear-gradient(90deg,#22d3ee,#6366f1);
+  font-weight:600;
+  text-align:center;
 }
 
 </style>
 </head>
 <body>
 
-<div class="header">📦 LOT TRACKING PRO DASHBOARD</div>
+<div class="header">LOT TRACE SYSTEM</div>
 <div class="status" id="status">Yükleniyor...</div>
 
 <div class="searchBox">
-<input id="search" placeholder="Sanita veya Tedarikçi Lot yaz..." oninput="search()" />
+<input id="search" placeholder="Lot gir..." oninput="search()" />
 </div>
 
 <div id="result" class="grid"></div>
@@ -132,9 +122,14 @@ Papa.parse(url, {
   header:true,
   complete:(res)=>{
     data = res.data.map(normalize);
-    document.getElementById("status").innerText = "Veri yüklendi: " + data.length + " kayıt";
+    document.getElementById("status").innerText = "Veri: " + data.length;
   }
 });
+
+function parseKg(val){
+  if(!val) return 0;
+  return parseFloat(val.replace("KG","").replace(",",".").trim()) || 0;
+}
 
 function search(){
 
@@ -149,11 +144,10 @@ function search(){
     (r["TEDARİKÇİ LOT"]||"").toUpperCase() === val
   );
 
-  // GROUP BY SUPPLIER LOT
   const grouped = {};
 
   filtered.forEach(r => {
-    const key = r["TEDARİKÇİ LOT"];
+    const key = r["TEDARİKÇİ LOT"] || r["SANİTA LOT NO"];
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
   });
@@ -163,30 +157,34 @@ function search(){
     const items = grouped[lot];
     const first = items[0];
 
+    let totalKg = items.reduce((sum,i)=> sum + parseKg(i["MİKTAR"]),0);
+
     const card = document.createElement("div");
     card.className = "card";
 
-    let sanitaList = items.map(i => `• ${i["SANİTA LOT NO"]} (${i["MİKTAR"]})`).join("<br>");
+    let relations = items.map(i => `
+      <div class="relation">
+        <div class="lotBox">${i["TEDARİKÇİ LOT"]}</div>
+        <div class="equal">=</div>
+        <div class="lotBox">${i["SANİTA LOT NO"]}</div>
+      </div>
+    `).join("");
 
     card.innerHTML = `
       <div class="title">${first["TEDARİKÇİ"]}</div>
 
-      <div class="tag">📦 Tedarikçi Lot: ${lot}</div>
-
       <div class="box">
-        📅 ${first["GELİŞ TARİHİ"]} <br>
-        📦 ${first["STOK ADI"]} <br>
-        ⚖️ ${first["MİKTAR"]}
+        📅 ${first["GELİŞ TARİHİ"]}<br>
+        📦 ${first["STOK ADI"]}
       </div>
 
       <div class="small">🏢 ${first["KULLANILACAK FİRMA"]}</div>
-      <div class="small">🚚 İrsaliye: ${first["İRSALİYE NO"]}</div>
-      <div class="small">🚛 Plaka: ${first["PLAKA"]}</div>
+      <div class="small">📄 ${first["İRSALİYE NO"]}</div>
+      <div class="small">🚛 ${first["PLAKA"]}</div>
 
-      <div class="multi">
-        🔁 EŞLEŞEN SANİTA LOTLAR<br><br>
-        ${sanitaList}
-      </div>
+      <div class="total">TOPLAM: ${totalKg} KG</div>
+
+      ${relations}
     `;
 
     out.appendChild(card);
