@@ -55,6 +55,7 @@ input {
   background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
   backdrop-filter: blur(20px);
   box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+  position:relative;
 }
 
 .title {
@@ -80,6 +81,7 @@ input {
   align-items:center;
   margin:18px 0;
   position:relative;
+  gap:10px;
 }
 
 .lotBox {
@@ -89,6 +91,26 @@ input {
   border-radius:14px;
   background: linear-gradient(135deg,#1e3a8a,#0ea5e9);
   transition:0.3s;
+  position:relative;
+  overflow:hidden;
+}
+
+/* ANİMASYON İKİ KUTUYA DA UYGULANDI (parlama overlay) */
+.lotBox::before{
+  content:"";
+  position:absolute;
+  top:-50%;
+  left:-50%;
+  width:200%;
+  height:200%;
+  background: linear-gradient(120deg, transparent, rgba(56,189,248,0.35), transparent);
+  transform:rotate(25deg);
+  animation: shine 3s linear infinite;
+}
+
+@keyframes shine{
+  0% {transform:translateX(-100%) rotate(25deg)}
+  100% {transform:translateX(100%) rotate(25deg)}
 }
 
 .lotBox:hover {
@@ -96,18 +118,9 @@ input {
   box-shadow:0 0 20px #38bdf8;
 }
 
+/* eski line kaldırıldı, yerine daha temiz akış */
 .line {
-  position:absolute;
-  left:30%;
-  right:30%;
-  height:2px;
-  background: linear-gradient(90deg,#38bdf8,#a78bfa);
-  animation: flow 2s linear infinite;
-}
-
-@keyframes flow {
-  0% {background-position:0%}
-  100% {background-position:100%}
+  display:none;
 }
 
 .total {
@@ -125,6 +138,17 @@ input {
   margin-top:6px;
 }
 
+.whatsappBtn{
+  margin-top:12px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:12px;
+  background:#22c55e;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -161,7 +185,29 @@ Papa.parse(url, {
 });
 
 function parseKg(val){
-  return parseFloat((val||"").replace("KG","").trim()) || 0;
+  return parseFloat((val||"").replace("KG"," ").trim()) || 0;
+}
+
+function buildWhatsAppText(first, items, totalKg){
+  let text = "📦 *LOT TAKİP RAPORU*\n\n";
+  text += "🏢 Tedarikçi: " + first["TEDARİKÇİ"] + "\n";
+  text += "📅 Tarih: " + first["GELİŞ TARİHİ"] + "\n";
+  text += "📄 İrsaliye: " + first["İRSALİYE NO"] + "\n";
+  text += "🚛 Plaka: " + first["PLAKA"] + "\n";
+  text += "📦 Stok: " + first["STOK ADI"] + "\n\n";
+
+  text += "🔗 *EŞLEŞMELER*\n";
+  items.forEach((i,idx)=>{
+    text += (idx+1)+") 🏷 Tedarikçi Lot: " + i["TEDARİKÇİ LOT"] + " | 🧾 Sanita Lot: " + i["SANİTA LOT NO"] + " | ⚖ " + i["MİKTAR"] + "\n";
+  });
+
+  text += "\n📊 *TOPLAM:* " + totalKg + " KG";
+  return encodeURIComponent(text);
+}
+
+function sendWhatsApp(first, items, totalKg){
+  const msg = buildWhatsAppText(first, items, totalKg);
+  window.open("https://wa.me/?text=" + msg, "_blank");
 }
 
 function search(){
@@ -196,7 +242,6 @@ function search(){
     let relations = items.map(i => `
       <div class="relationRow">
         <div class="lotBox">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi Lot</small></div>
-        <div class="line"></div>
         <div class="lotBox">${i["SANİTA LOT NO"]}<br><small>Sanita Lot</small></div>
       </div>
     `).join("");
@@ -212,10 +257,9 @@ function search(){
       <div class="total">TOPLAM: ${totalKg} KG</div>
 
       <div class="sectionTitle">EŞLEŞMELER</div>
+      <div class="relationWrap">${relations}</div>
 
-      <div class="relationWrap">
-        ${relations}
-      </div>
+      <button class="whatsappBtn" onclick='sendWhatsApp(${JSON.stringify(first)}, ${JSON.stringify(items)}, ${totalKg})'>📤 WhatsApp Gönder</button>
     `;
 
     out.appendChild(card);
