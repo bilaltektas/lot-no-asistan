@@ -3,223 +3,117 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yapay Zeka Destekli Lot Takip Uygulaması</title>
+<title>Lot Trace Enterprise</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
 
 <style>
-body {
-  margin:0;
-  font-family: Inter;
-  background: radial-gradient(circle at top, #0b0f1a, #020617);
-  color:#fff;
+body{margin:0;font-family:Inter;background:#0b0f1a;color:#fff}
+.header{text-align:center;padding:15px;font-weight:700}
+.panel{padding:10px;display:flex;gap:10px;flex-wrap:wrap}
+input,select{padding:10px;border-radius:10px;border:none}
+#cy{width:100%;height:60vh;background:#020617}
+button{padding:10px;border:none;border-radius:10px}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center}
+.modalBox{background:#111;padding:20px;border-radius:12px;width:90%;max-width:400px}
+@media print{
+ body{background:#fff;color:#000}
+ #cy{display:none}
 }
-
-.header {
-  text-align:center;
-  padding:20px;
-  font-size:22px;
-  font-weight:700;
-  background: linear-gradient(90deg,#38bdf8,#a78bfa);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-}
-
-.searchWrap {
-  padding:20px;
-}
-
-.searchBox {
-  position:relative;
-}
-
-input {
-  width:100%;
-  padding:18px 20px;
-  border-radius:18px;
-  border:none;
-  outline:none;
-  font-size:17px;
-  color:#fff;
-  background: linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);
-}
-
-.grid { padding:10px; }
-
-.card {
-  margin:14px;
-  padding:20px;
-  border-radius:22px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
-  backdrop-filter: blur(20px);
-  box-shadow: 0 15px 50px rgba(0,0,0,0.6);
-}
-
-.title {
-  font-size:18px;
-  font-weight:700;
-  color:#38bdf8;
-}
-
-.sectionTitle {
-  margin-top:15px;
-  font-size:13px;
-  opacity:0.7;
-}
-
-.relationWrap {
-  margin-top:10px;
-  position:relative;
-}
-
-.relationRow {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin:18px 0;
-  position:relative;
-}
-
-.lotBox {
-  width:40%;
-  padding:12px;
-  text-align:center;
-  border-radius:14px;
-  background: linear-gradient(135deg,#1e3a8a,#0ea5e9);
-  transition:0.3s;
-}
-
-.lotBox:hover {
-  transform:scale(1.05);
-  box-shadow:0 0 20px #38bdf8;
-}
-
-.line {
-  position:absolute;
-  left:30%;
-  right:30%;
-  height:2px;
-  background: linear-gradient(90deg,#38bdf8,#a78bfa);
-  animation: flow 2s linear infinite;
-}
-
-@keyframes flow {
-  0% {background-position:0%}
-  100% {background-position:100%}
-}
-
-.total {
-  margin-top:15px;
-  padding:12px;
-  border-radius:12px;
-  text-align:center;
-  background: linear-gradient(90deg,#22d3ee,#6366f1);
-  font-weight:600;
-}
-
-.meta {
-  font-size:13px;
-  opacity:0.8;
-  margin-top:6px;
-}
-
 </style>
 </head>
 <body>
 
-<div class="header">LOT TRACE ULTIMATE</div>
+<div class="header">Yapay Zeka Destekli Lot No Asistanı</div>
 
-<div class="searchWrap">
-  <div class="searchBox">
-    <input id="search" placeholder="Lot gir (Sanita / Tedarikçi)" oninput="search()">
-  </div>
+<div class="panel">
+<input id="search" placeholder="Lot ara">
+<select id="firma"></select>
+<input type="text" id="urun" placeholder="Ürün ara">
+<input type="date" id="tarih">
+<button onclick="run()">ARA</button>
+<button onclick="window.print()">YAZDIR</button>
+<button onclick="exportPDF()">PDF</button>
 </div>
 
-<div id="result" class="grid"></div>
+<div id="cy"></div>
+
+<div class="modal" id="modal">
+ <div class="modalBox" id="modalContent"></div>
+</div>
 
 <script>
+const url="https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=csv";
+let data=[];
 
-const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=csv";
-let data = [];
+Papa.parse(url,{download:true,header:true,complete:r=>{
+ data=r.data;
+ initFilters();
+}});
 
-function normalize(row){
-  const obj = {};
-  for (let k in row){
-    obj[k.trim().toUpperCase()] = row[k];
-  }
-  return obj;
+function initFilters(){
+ const firms=[...new Set(data.map(d=>d["TEDARİKÇİ"]))];
+ const sel=document.getElementById("firma");
+ sel.innerHTML='<option value="">Firma</option>';
+ firms.forEach(f=>{
+  const o=document.createElement("option");
+  o.textContent=f; sel.appendChild(o);
+ });
 }
 
-Papa.parse(url, {
-  download:true,
-  header:true,
-  complete:(res)=>{
-    data = res.data.map(normalize);
-  }
-});
+function run(){
+ const lot=document.getElementById("search").value.toUpperCase();
+ const firma=document.getElementById("firma").value;
+ const urun=document.getElementById("urun").value.toUpperCase();
 
-function parseKg(val){
-  return parseFloat((val||"").replace("KG","").trim()) || 0;
+ const filtered=data.filter(d=>
+  (!lot || d["SANİTA LOT NO"]==lot || d["TEDARİKÇİ LOT"]==lot) &&
+  (!firma || d["TEDARİKÇİ"]==firma) &&
+  (!urun || (d["STOK ADI"]||"").toUpperCase().includes(urun))
+ );
+
+ let elements=[];
+
+ filtered.forEach(d=>{
+  elements.push({data:{id:d["TEDARİKÇİ LOT"],label:d["TEDARİKÇİ LOT"]}});
+  elements.push({data:{id:d["SANİTA LOT NO"],label:d["SANİTA LOT NO"]}});
+  elements.push({data:{source:d["TEDARİKÇİ LOT"],target:d["SANİTA LOT NO"],info:JSON.stringify(d)}});
+ });
+
+ const cy=cytoscape({
+  container:document.getElementById('cy'),
+  elements:elements,
+  style:[
+    {selector:'node',style:{'background-color':'#38bdf8','label':'data(label)','color':'#fff'}},
+    {selector:'edge',style:{'line-color':'#a78bfa','width':2}}
+  ],
+  layout:{name:'cose'}
+ });
+
+ cy.on('tap','edge',evt=>{
+  const info=JSON.parse(evt.target.data('info'));
+  showModal(info);
+ });
 }
 
-function search(){
-  const val = document.getElementById("search").value.toUpperCase().trim();
-  const out = document.getElementById("result");
-  out.innerHTML = "";
-  if(!val) return;
+function showModal(d){
+ const m=document.getElementById("modal");
+ const c=document.getElementById("modalContent");
+ c.innerHTML=`
+  <h3>${d["TEDARİKÇİ"]}</h3>
+  <p>📦 ${d["STOK ADI"]}</p>
+  <p>⚖️ ${d["MİKTAR"]}</p>
+  <p>📅 ${d["GELİŞ TARİHİ"]}</p>
+  <p>📄 ${d["İRSALİYE NO"]}</p>
+ `;
+ m.style.display="flex";
+ m.onclick=()=>m.style.display="none";
+}
 
-  const filtered = data.filter(r =>
-    (r["SANİTA LOT NO"]||"").toUpperCase() === val ||
-    (r["TEDARİKÇİ LOT"]||"").toUpperCase() === val
-  );
-
-  const grouped = {};
-
-  filtered.forEach(r => {
-    const key = r["TEDARİKÇİ LOT"];
-    if(!grouped[key]) grouped[key] = [];
-    grouped[key].push(r);
-  });
-
-  Object.keys(grouped).forEach(lot => {
-
-    const items = grouped[lot];
-    const first = items[0];
-
-    let totalKg = items.reduce((sum,i)=> sum + parseKg(i["MİKTAR"]),0);
-
-    const card = document.createElement("div");
-    card.className = "card";
-
-    let relations = items.map(i => `
-      <div class="relationRow">
-        <div class="lotBox">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi Lot</small></div>
-        <div class="line"></div>
-        <div class="lotBox">${i["SANİTA LOT NO"]}<br><small>Sanita Lot</small></div>
-      </div>
-    `).join("");
-
-    card.innerHTML = `
-      <div class="title">${first["TEDARİKÇİ"]}</div>
-
-      <div class="meta">📅 ${first["GELİŞ TARİHİ"]}</div>
-      <div class="meta">📦 ${first["STOK ADI"]}</div>
-      <div class="meta">📄 ${first["İRSALİYE NO"]}</div>
-      <div class="meta">🚛 ${first["PLAKA"]}</div>
-
-      <div class="total">TOPLAM: ${totalKg} KG</div>
-
-      <div class="sectionTitle">EŞLEŞMELER</div>
-
-      <div class="relationWrap">
-        ${relations}
-      </div>
-    `;
-
-    out.appendChild(card);
-  });
+function exportPDF(){
+ window.print();
 }
 
 </script>
