@@ -1,30 +1,131 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOT TRACE ULTIMATE PRO</title>
+<title>Yapay Zeka Destekli Lot Takip Uygulaması</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-body {margin:0;font-family:Inter;background: radial-gradient(circle at top, #0b0f1a, #020617);color:#fff;}
-.header{text-align:center;padding:20px;font-size:22px;font-weight:700;background: linear-gradient(90deg,#38bdf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.searchWrap{padding:20px}
-input{width:100%;padding:18px;border-radius:18px;border:none;font-size:17px;color:#fff;background: rgba(255,255,255,0.08)}
-.controls{display:flex;gap:10px;padding:0 20px}
-button{flex:1;padding:12px;border:none;border-radius:12px;background:#1e3a8a;color:#fff}
-.card{margin:14px;padding:20px;border-radius:22px;background: rgba(255,255,255,0.05);box-shadow:0 15px 50px rgba(0,0,0,0.6)}
-.title{font-size:18px;font-weight:700;color:#38bdf8}
-.meta{font-size:13px;opacity:0.8;margin-top:6px}
-.total{margin-top:15px;padding:12px;border-radius:12px;text-align:center;background: linear-gradient(90deg,#22d3ee,#6366f1);font-weight:600}
-.relationRow{position:relative;margin:30px 0;height:60px}
-.lotBox{position:absolute;width:40%;padding:10px;border-radius:12px;text-align:center;background:linear-gradient(135deg,#1e3a8a,#0ea5e9)}
-.left{left:0}
-.right{right:0}
-svg{position:absolute;top:0;left:0;width:100%;height:100%}
-.dot{fill:#fff}
+body {
+  margin:0;
+  font-family: Inter;
+  background: radial-gradient(circle at top, #0b0f1a, #020617);
+  color:#fff;
+}
+
+.header {
+  text-align:center;
+  padding:20px;
+  font-size:22px;
+  font-weight:700;
+  background: linear-gradient(90deg,#38bdf8,#a78bfa);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.searchWrap {
+  padding:20px;
+}
+
+.searchBox {
+  position:relative;
+}
+
+input {
+  width:100%;
+  padding:18px 20px;
+  border-radius:18px;
+  border:none;
+  outline:none;
+  font-size:17px;
+  color:#fff;
+  background: linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+.grid { padding:10px; }
+
+.card {
+  margin:14px;
+  padding:20px;
+  border-radius:22px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
+  backdrop-filter: blur(20px);
+  box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+}
+
+.title {
+  font-size:18px;
+  font-weight:700;
+  color:#38bdf8;
+}
+
+.sectionTitle {
+  margin-top:15px;
+  font-size:13px;
+  opacity:0.7;
+}
+
+.relationWrap {
+  margin-top:10px;
+  position:relative;
+}
+
+.relationRow {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:18px 0;
+  position:relative;
+}
+
+.lotBox {
+  width:40%;
+  padding:12px;
+  text-align:center;
+  border-radius:14px;
+  background: linear-gradient(135deg,#1e3a8a,#0ea5e9);
+  transition:0.3s;
+}
+
+.lotBox:hover {
+  transform:scale(1.05);
+  box-shadow:0 0 20px #38bdf8;
+}
+
+.line {
+  position:absolute;
+  left:30%;
+  right:30%;
+  height:2px;
+  background: linear-gradient(90deg,#38bdf8,#a78bfa);
+  animation: flow 2s linear infinite;
+}
+
+@keyframes flow {
+  0% {background-position:0%}
+  100% {background-position:100%}
+}
+
+.total {
+  margin-top:15px;
+  padding:12px;
+  border-radius:12px;
+  text-align:center;
+  background: linear-gradient(90deg,#22d3ee,#6366f1);
+  font-weight:600;
+}
+
+.meta {
+  font-size:13px;
+  opacity:0.8;
+  margin-top:6px;
+}
+
 </style>
 </head>
 <body>
@@ -32,132 +133,96 @@ svg{position:absolute;top:0;left:0;width:100%;height:100%}
 <div class="header">Yapay Zeka Destekli Lot Takip Asistanı</div>
 
 <div class="searchWrap">
-<input id="search" placeholder="Lot gir" oninput="search()">
+  <div class="searchBox">
+    <input id="search" placeholder="Lot gir (Sanita / Tedarikçi)" oninput="search()">
+  </div>
 </div>
 
-<div class="controls">
-<button onclick="printPage()">🖨️ Yazdır</button>
-<button onclick="sendWhatsApp()">📲 WhatsApp</button>
-</div>
-
-<div id="result"></div>
+<div id="result" class="grid"></div>
 
 <script>
-const url="https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=csv";
-let data=[];
-Papa.parse(url,{download:true,header:true,complete:r=>data=r.data});
 
-function parseKg(v){return parseFloat((v||"").replace("KG","").trim())||0}
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=csv";
+let data = [];
+
+function normalize(row){
+  const obj = {};
+  for (let k in row){
+    obj[k.trim().toUpperCase()] = row[k];
+  }
+  return obj;
+}
+
+Papa.parse(url, {
+  download:true,
+  header:true,
+  complete:(res)=>{
+    data = res.data.map(normalize);
+  }
+});
+
+function parseKg(val){
+  return parseFloat((val||"").replace("KG","").trim()) || 0;
+}
 
 function search(){
- const val=document.getElementById("search").value.toUpperCase();
- const out=document.getElementById("result");
- out.innerHTML="";
- if(!val)return;
+  const val = document.getElementById("search").value.toUpperCase().trim();
+  const out = document.getElementById("result");
+  out.innerHTML = "";
+  if(!val) return;
 
- const f=data.filter(r=>r["SANİTA LOT NO"]==val||r["TEDARİKÇİ LOT"]==val);
+  const filtered = data.filter(r =>
+    (r["SANİTA LOT NO"]||"").toUpperCase() === val ||
+    (r["TEDARİKÇİ LOT"]||"").toUpperCase() === val
+  );
 
- const grouped={};
- f.forEach(r=>{
-  const key=r["TEDARİKÇİ LOT"];
-  if(!grouped[key])grouped[key]=[];
-  grouped[key].push(r);
- });
+  const grouped = {};
 
- Object.keys(grouped).forEach(lot=>{
-  const items=grouped[lot];
-  const first=items[0];
-  let total=items.reduce((s,i)=>s+parseKg(i["MİKTAR"]),0);
+  filtered.forEach(r => {
+    const key = r["TEDARİKÇİ LOT"];
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
 
-  const card=document.createElement("div");
-  card.className="card";
+  Object.keys(grouped).forEach(lot => {
 
-  let rows=items.map((i,idx)=>{
-    return `
-    <div class="relationRow">
-      <div class="lotBox left">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi</small></div>
-      <div class="lotBox right">${i["SANİTA LOT NO"]}<br><small>Sanita</small></div>
-      <svg style="pointer-events:none;">
-        <path d="M 120 30 C 250 0, 350 60, 500 30" stroke="#38bdf8" fill="none" stroke-width="2"/>
-        <path d="M 120 30 C 250 0, 350 60, 500 30" stroke="#a78bfa" fill="none" stroke-width="1" opacity="0.5"/>
-        <circle class="dot" r="4">
-          <animateMotion dur="2s" repeatCount="indefinite" path="M 120 30 C 250 0, 350 60, 500 30" />
-        </circle>
-        <circle class="dot" r="3">
-          <animateMotion dur="2.5s" repeatCount="indefinite" path="M 120 30 C 250 0, 350 60, 500 30" />
-        </circle>
-      </svg>
-    </div>`;
-  }).join("");
+    const items = grouped[lot];
+    const first = items[0];
 
-  card.innerHTML=`
-  <div class="title">${first["TEDARİKÇİ"]}</div>
-  <div class="meta">📅 ${first["GELİŞ TARİHİ"]}</div>
-  <div class="meta">📦 ${first["STOK ADI"]}</div>
-  <div class="meta">📄 ${first["İRSALİYE NO"]}</div>
-  <div class="meta">🚛 ${first["PLAKA"]}</div>
-  <div class="total">TOPLAM: ${total} KG</div>
-  ${rows}
-  `;
+    let totalKg = items.reduce((sum,i)=> sum + parseKg(i["MİKTAR"]),0);
 
-  out.appendChild(card);
- });
+    const card = document.createElement("div");
+    card.className = "card";
+
+    let relations = items.map(i => `
+      <div class="relationRow">
+        <div class="lotBox">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi Lot</small></div>
+        <div class="line"></div>
+        <div class="lotBox">${i["SANİTA LOT NO"]}<br><small>Sanita Lot</small></div>
+      </div>
+    `).join("");
+
+    card.innerHTML = `
+      <div class="title">${first["TEDARİKÇİ"]}</div>
+
+      <div class="meta">📅 ${first["GELİŞ TARİHİ"]}</div>
+      <div class="meta">📦 ${first["STOK ADI"]}</div>
+      <div class="meta">📄 ${first["İRSALİYE NO"]}</div>
+      <div class="meta">🚛 ${first["PLAKA"]}</div>
+
+      <div class="total">TOPLAM: ${totalKg} KG</div>
+
+      <div class="sectionTitle">EŞLEŞMELER</div>
+
+      <div class="relationWrap">
+        ${relations}
+      </div>
+    `;
+
+    out.appendChild(card);
+  });
 }
 
-function printPage(){window.print()}
-function sendWhatsApp(){
- const val=document.getElementById("search").value.toUpperCase();
- const f=data.filter(r=>r["SANİTA LOT NO"]==val||r["TEDARİKÇİ LOT"]==val);
- if(f.length===0){
-   window.open("https://wa.me/?text=Kayıt bulunamadı");
-   return;
- }
-
- let msg="📦 *LOT TAKİP RAPORU*\n";
- msg+="────────────────────\n";
-
- f.forEach(r=>{
-   msg+=`\n🔹 *TEDARİKÇİ:* ${r["TEDARİKÇİ"]}\n`;
-   msg+="────────────────────\n";
-   msg+=`📦 ÜRÜN      : ${r["STOK ADI"]}\n`;
-   msg+=`⚖️ MİKTAR    : ${r["MİKTAR"]}\n`;
-   msg+=`📅 TARİH     : ${r["GELİŞ TARİHİ"]}\n`;
-   msg+=`📄 İRSALİYE  : ${r["İRSALİYE NO"]}\n`;
-   msg+=`🚛 PLAKA     : ${r["PLAKA"]}\n`;
-   msg+="────────────────────\n";
-   msg+=`🏷️ TED. LOT  : ${r["TEDARİKÇİ LOT"]}\n`;
-   msg+=`🏷️ SANİTA LOT: ${r["SANİTA LOT NO"]}\n`;
-   msg+="────────────────────\n";
- });
-
- window.open("https://wa.me/?text="+encodeURIComponent(msg));
-}
-
- let msg="📦 *LOT TAKİP RAPORU*
-
-";
-
- f.forEach(r=>{
-   msg+=`🔹 *Tedarikçi:* ${r["TEDARİKÇİ"]}
-`;
-   msg+=`📦 *Ürün:* ${r["STOK ADI"]}
-`;
-   msg+=`⚖️ *Miktar:* ${r["MİKTAR"]}
-`;
-   msg+=`📅 *Tarih:* ${r["GELİŞ TARİHİ"]}
-`;
-   msg+=`📄 *İrsaliye:* ${r["İRSALİYE NO"]}
-`;
-   msg+=`🚛 *Plaka:* ${r["PLAKA"]}
-`;
-   msg+=`🔗 ${r["TEDARİKÇİ LOT"]} = ${r["SANİTA LOT NO"]}
-`;
-   msg+="────────────────────
-";
- });
-
- window.open("https://wa.me/?text="+encodeURIComponent(msg));
-}
 </script>
 
 </body>
