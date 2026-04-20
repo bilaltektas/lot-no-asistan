@@ -256,39 +256,6 @@ function parseKg(val){
 }
 
 function buildWhatsAppText(first, items, totalKg){
-  let text = "📦 *LOT TAKİP RAPORU*
-
-";
-  text += "🏢 Tedarikçi: " + first["TEDARİKÇİ"] + "
-";
-  text += "📅 Tarih: " + first["GELİŞ TARİHİ"] + "
-";
-  text += "📄 İrsaliye: " + first["İRSALİYE NO"] + "
-";
-  text += "🚛 Plaka: " + first["PLAKA"] + "
-";
-  text += "📦 Stok: " + first["STOK ADI"] + "
-
-";
-
-  text += "🔗 *EŞLEŞMELER*
-";
-  items.forEach((i,idx)=>{
-    text += (idx+1)+") 🏷 Tedarikçi Lot: " + i["TEDARİKÇİ LOT"] + " | 🧾 Sanita Lot: " + i["SANİTA LOT NO"] + " | ⚖ " + i["MİKTAR"] + "
-";
-  });
-
-  text += "
-📊 *TOPLAM:* " + totalKg + " KG";
-  return encodeURIComponent(text);
-}
-
-function sendWhatsApp(first, items, totalKg){
-  const msg = buildWhatsAppText(first, items, totalKg);
-  window.open("https://wa.me/?text=" + msg, "_blank");
-}
-
-function buildWhatsAppText(first, items, totalKg){
   let text = "📦 *LOT TAKİP RAPORU*\n\n";
   text += "🏢 Tedarikçi: " + first["TEDARİKÇİ"] + "\n";
   text += "📅 Tarih: " + first["GELİŞ TARİHİ"] + "\n";
