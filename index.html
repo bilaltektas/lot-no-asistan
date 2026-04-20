@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Lot Sorgulama (Google Sheets Bağlantılı)</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 30px;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  margin-top: 20px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.row {
+  margin: 6px 0;
+}
+
+.label {
+  font-weight: bold;
+  color: #555;
+}
+
+.highlight {
+  background: #eef6ff;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.status {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>Lot Sorgulama Sistemi</h2>
+<div class="status" id="status">Veri yükleniyor...</div>
+
+<input type="text" id="search" placeholder="Sanita Lot veya Tedarikçi Lot gir..." oninput="searchLot()" />
+
+<div id="result"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+
+let data = [];
+
+const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=xlsx";
+
+async function loadData() {
+  try {
+    const res = await fetch(sheetUrl);
+    const arrayBuffer = await res.arrayBuffer();
+
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    data = XLSX.utils.sheet_to_json(sheet);
+
+    document.getElementById('status').innerText = "Veri yüklendi: " + data.length + " kayıt";
+
+  } catch (err) {
+    document.getElementById('status').innerText = "Veri yüklenemedi!";
+    console.error(err);
+  }
+}
+
+loadData();
+
+function searchLot() {
+  const value = document.getElementById('search').value.toUpperCase().trim();
+  const container = document.getElementById('result');
+  container.innerHTML = '';
+
+  if (!value || data.length === 0) return;
+
+  const results = data.filter(row =>
+    String(row["SANİTA LOT NO"]).toUpperCase() === value ||
+    String(row["TEDARİKÇİ LOT"]).toUpperCase() === value
+  );
+
+  results.forEach(row => {
+
+    const isSanita = String(row["SANİTA LOT NO"]).toUpperCase() === value;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    card.innerHTML = `
+      <div class="title">${row["TEDARİKÇİ"] || "-"}</div>
+
+      <div class="highlight">
+        ${row["GELİŞ TARİHİ"]} - ${row["STOK ADI"]} - ${row["MİKTAR"]}
+      </div>
+
+      <div class="row"><span class="label">Kullanılacak Firma:</span> ${row["KULLANILACAK FİRMA"]}</div>
+
+      <div class="row"><span class="label">${isSanita ? "Tedarikçi Lot" : "Sanita Lot"}:</span> 
+      ${isSanita ? row["TEDARİKÇİ LOT"] : row["SANİTA LOT NO"]}</div>
+
+      <div class="row"><span class="label">İrsaliye No:</span> ${row["İRSALİYE NO"]}</div>
+      <div class="row"><span class="label">Plaka:</span> ${row["PLAKA"]}</div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+</script>
+
+</body>
+</html>
