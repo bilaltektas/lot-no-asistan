@@ -77,10 +77,14 @@ function search(){
     <div class="relationRow">
       <div class="lotBox left">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi</small></div>
       <div class="lotBox right">${i["SANİTA LOT NO"]}<br><small>Sanita</small></div>
-      <svg>
-        <path d="M 120 30 C 250 0, 350 60, 500 30" stroke="#38bdf8" fill="none"/>
+      <svg style="pointer-events:none;">
+        <path d="M 120 30 C 250 0, 350 60, 500 30" stroke="#38bdf8" fill="none" stroke-width="2"/>
+        <path d="M 120 30 C 250 0, 350 60, 500 30" stroke="#a78bfa" fill="none" stroke-width="1" opacity="0.5"/>
         <circle class="dot" r="4">
           <animateMotion dur="2s" repeatCount="indefinite" path="M 120 30 C 250 0, 350 60, 500 30" />
+        </circle>
+        <circle class="dot" r="3">
+          <animateMotion dur="2.5s" repeatCount="indefinite" path="M 120 30 C 250 0, 350 60, 500 30" />
         </circle>
       </svg>
     </div>`;
@@ -102,8 +106,57 @@ function search(){
 
 function printPage(){window.print()}
 function sendWhatsApp(){
- const val=document.getElementById("search").value;
- window.open("https://wa.me/?text=Lot: "+val)
+ const val=document.getElementById("search").value.toUpperCase();
+ const f=data.filter(r=>r["SANİTA LOT NO"]==val||r["TEDARİKÇİ LOT"]==val);
+ if(f.length===0){
+   window.open("https://wa.me/?text=Kayıt bulunamadı");
+   return;
+ }
+
+ let msg="📦 *LOT TAKİP RAPORU*\n";
+ msg+="────────────────────\n";
+
+ f.forEach(r=>{
+   msg+=`\n🔹 *TEDARİKÇİ:* ${r["TEDARİKÇİ"]}\n`;
+   msg+="────────────────────\n";
+   msg+=`📦 ÜRÜN      : ${r["STOK ADI"]}\n`;
+   msg+=`⚖️ MİKTAR    : ${r["MİKTAR"]}\n`;
+   msg+=`📅 TARİH     : ${r["GELİŞ TARİHİ"]}\n`;
+   msg+=`📄 İRSALİYE  : ${r["İRSALİYE NO"]}\n`;
+   msg+=`🚛 PLAKA     : ${r["PLAKA"]}\n`;
+   msg+="────────────────────\n";
+   msg+=`🏷️ TED. LOT  : ${r["TEDARİKÇİ LOT"]}\n`;
+   msg+=`🏷️ SANİTA LOT: ${r["SANİTA LOT NO"]}\n`;
+   msg+="────────────────────\n";
+ });
+
+ window.open("https://wa.me/?text="+encodeURIComponent(msg));
+}
+
+ let msg="📦 *LOT TAKİP RAPORU*
+
+";
+
+ f.forEach(r=>{
+   msg+=`🔹 *Tedarikçi:* ${r["TEDARİKÇİ"]}
+`;
+   msg+=`📦 *Ürün:* ${r["STOK ADI"]}
+`;
+   msg+=`⚖️ *Miktar:* ${r["MİKTAR"]}
+`;
+   msg+=`📅 *Tarih:* ${r["GELİŞ TARİHİ"]}
+`;
+   msg+=`📄 *İrsaliye:* ${r["İRSALİYE NO"]}
+`;
+   msg+=`🚛 *Plaka:* ${r["PLAKA"]}
+`;
+   msg+=`🔗 ${r["TEDARİKÇİ LOT"]} = ${r["SANİTA LOT NO"]}
+`;
+   msg+="────────────────────
+";
+ });
+
+ window.open("https://wa.me/?text="+encodeURIComponent(msg));
 }
 </script>
 
