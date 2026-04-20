@@ -3,159 +3,194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Lot Tracking Dashboard</title>
+<title>Lot Sorgulama - Pro Dashboard</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
-
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <style>
-
 body {
   margin:0;
   font-family: Inter;
-  background: radial-gradient(circle at top, #1a1f2e, #0b0f1a);
-  color:white;
-  overflow-x:hidden;
+  background: linear-gradient(135deg, #0b1220, #0f1b33);
+  color:#fff;
 }
 
-/* HEADER */
 .header {
-  padding:20px;
-  text-align:center;
+  padding:18px;
   font-size:20px;
   font-weight:700;
+  text-align:center;
+  letter-spacing:0.5px;
 }
 
-/* SEARCH */
-.search {
+.status {
+  text-align:center;
+  font-size:13px;
+  opacity:0.7;
+}
+
+.searchBox {
   padding:15px;
 }
 
 input {
   width:100%;
-  padding:15px;
-  border-radius:15px;
+  padding:16px;
+  border-radius:14px;
   border:none;
   outline:none;
   font-size:16px;
+  color:#fff;
   background: rgba(255,255,255,0.08);
-  color:white;
   backdrop-filter: blur(10px);
 }
 
-/* CARD */
-.card {
-  margin:15px;
-  padding:18px;
-  border-radius:18px;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  transform: translateY(20px);
-  opacity:0;
-  animation: fadeUp 0.4s forwards;
+.grid {
+  padding:10px;
 }
 
-@keyframes fadeUp {
-  to {
-    transform: translateY(0);
-    opacity:1;
-  }
+.card {
+  margin:12px;
+  padding:16px;
+  border-radius:18px;
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  animation: fade 0.35s ease;
+}
+
+@keyframes fade {
+  from {opacity:0; transform:translateY(10px)}
+  to {opacity:1; transform:translateY(0)}
 }
 
 .title {
   font-weight:700;
   font-size:18px;
+  color:#7dd3fc;
 }
 
-.meta {
-  margin-top:8px;
-  font-size:14px;
-  opacity:0.85;
-}
-
-.badge {
+.tag {
   display:inline-block;
-  padding:5px 10px;
+  padding:6px 10px;
   border-radius:10px;
-  background: rgba(0,200,255,0.2);
-  margin-top:10px;
+  background: rgba(0,180,255,0.15);
+  margin-top:8px;
   font-size:12px;
+}
+
+.box {
+  margin-top:10px;
+  padding:10px;
+  border-radius:12px;
+  background: rgba(255,255,255,0.05);
+}
+
+.small {
+  font-size:13px;
+  opacity:0.85;
+  margin-top:5px;
+}
+
+.multi {
+  margin-top:10px;
+  padding:10px;
+  border-left:3px solid #38bdf8;
+  background: rgba(56,189,248,0.08);
+  border-radius:10px;
 }
 
 </style>
 </head>
-
 <body>
 
-<div class="header">📦 LOT TRACKING DASHBOARD</div>
+<div class="header">📦 LOT TRACKING PRO DASHBOARD</div>
+<div class="status" id="status">Yükleniyor...</div>
 
-<div class="search">
-<input id="search" placeholder="Lot gir (SP26-007 / SC/25-680)" oninput="searchData()">
+<div class="searchBox">
+<input id="search" placeholder="Sanita veya Tedarikçi Lot yaz..." oninput="search()" />
 </div>
 
-<div id="result"></div>
+<div id="result" class="grid"></div>
 
 <script>
 
 const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTq_K0MzfNE9D-UaSpJ_CUF9pZIgMSp0FWj76vtXMTNv7fx0GndMw3yyAW9J58ke30KY722ixFQKWgr/pub?output=csv";
-
 let data = [];
 
+function normalize(row){
+  const obj = {};
+  for (let k in row){
+    obj[k.trim().toUpperCase()] = row[k];
+  }
+  return obj;
+}
+
 Papa.parse(url, {
-  download: true,
-  header: true,
-  complete: function(results) {
-    data = results.data;
+  download:true,
+  header:true,
+  complete:(res)=>{
+    data = res.data.map(normalize);
+    document.getElementById("status").innerText = "Veri yüklendi: " + data.length + " kayıt";
   }
 });
 
-function searchData() {
+function search(){
 
-  const val = document.getElementById("search").value.toUpperCase();
-  const res = document.getElementById("result");
-  res.innerHTML = "";
+  const val = document.getElementById("search").value.toUpperCase().trim();
+  const out = document.getElementById("result");
+  out.innerHTML = "";
 
-  if (!val) return;
+  if(!val) return;
 
   const filtered = data.filter(r =>
-    (r["SANİTA LOT NO"] || "").toUpperCase() === val ||
-    (r["TEDARİKÇİ LOT"] || "").toUpperCase() === val
+    (r["SANİTA LOT NO"]||"").toUpperCase() === val ||
+    (r["TEDARİKÇİ LOT"]||"").toUpperCase() === val
   );
 
+  // GROUP BY SUPPLIER LOT
+  const grouped = {};
+
   filtered.forEach(r => {
+    const key = r["TEDARİKÇİ LOT"];
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
 
-    const isSanita = (r["SANİTA LOT NO"] || "").toUpperCase() === val;
+  Object.keys(grouped).forEach(lot => {
 
-    const div = document.createElement("div");
-    div.className = "card";
+    const items = grouped[lot];
+    const first = items[0];
 
-    div.innerHTML = `
-      <div class="title">${r["TEDARİKÇİ"]}</div>
+    const card = document.createElement("div");
+    card.className = "card";
 
-      <div class="meta">
-        📅 ${r["GELİŞ TARİHİ"]} <br>
-        📦 ${r["STOK ADI"]} <br>
-        ⚖️ ${r["MİKTAR"]}
+    let sanitaList = items.map(i => `• ${i["SANİTA LOT NO"]} (${i["MİKTAR"]})`).join("<br>");
+
+    card.innerHTML = `
+      <div class="title">${first["TEDARİKÇİ"]}</div>
+
+      <div class="tag">📦 Tedarikçi Lot: ${lot}</div>
+
+      <div class="box">
+        📅 ${first["GELİŞ TARİHİ"]} <br>
+        📦 ${first["STOK ADI"]} <br>
+        ⚖️ ${first["MİKTAR"]}
       </div>
 
-      <div class="badge">
-        ${r["KULLANILACAK FİRMA"]}
-      </div>
+      <div class="small">🏢 ${first["KULLANILACAK FİRMA"]}</div>
+      <div class="small">🚚 İrsaliye: ${first["İRSALİYE NO"]}</div>
+      <div class="small">🚛 Plaka: ${first["PLAKA"]}</div>
 
-      <div class="meta">
-        ${isSanita
-          ? "🔁 Tedarikçi Lot: " + r["TEDARİKÇİ LOT"]
-          : "🔁 Sanita Lot: " + r["SANİTA LOT NO"]}
+      <div class="multi">
+        🔁 EŞLEŞEN SANİTA LOTLAR<br><br>
+        ${sanitaList}
       </div>
-
-      <div class="meta">🚚 İrsaliye: ${r["İRSALİYE NO"]}</div>
-      <div class="meta">🚛 Plaka: ${r["PLAKA"]}</div>
     `;
 
-    res.appendChild(div);
+    out.appendChild(card);
+
   });
 }
 
