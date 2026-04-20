@@ -93,6 +93,7 @@ input {
   transition:0.3s;
   position:relative;
   overflow:hidden;
+  /* animation fix applied */
 }
 
 /* ANİMASYON İKİ KUTUYA DA UYGULANDI (parlama overlay) */
@@ -118,6 +119,24 @@ input {
   box-shadow:0 0 20px #38bdf8;
 }
 
+.lotBox::before{
+  content:"";
+  position:absolute;
+  top:-50%;
+  left:-50%;
+  width:200%;
+  height:200%;
+  background: linear-gradient(120deg, transparent, rgba(56,189,248,0.35), transparent);
+  transform:rotate(25deg);
+  animation: shine 3s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes shine{
+  0% {transform:translateX(-100%) rotate(25deg)}
+  100% {transform:translateX(100%) rotate(25deg)}
+}
+
 /* eski line kaldırıldı, yerine daha temiz akış */
 .line {
   display:none;
@@ -136,6 +155,18 @@ input {
   font-size:13px;
   opacity:0.8;
   margin-top:6px;
+}
+
+.whatsappBtn{
+  margin-top:12px;
+  width:100%;
+  padding:10px;
+  border:none;
+  border-radius:12px;
+  background:#22c55e;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
 }
 
 .whatsappBtn{
@@ -186,6 +217,39 @@ Papa.parse(url, {
 
 function parseKg(val){
   return parseFloat((val||"").replace("KG"," ").trim()) || 0;
+}
+
+function buildWhatsAppText(first, items, totalKg){
+  let text = "📦 *LOT TAKİP RAPORU*
+
+";
+  text += "🏢 Tedarikçi: " + first["TEDARİKÇİ"] + "
+";
+  text += "📅 Tarih: " + first["GELİŞ TARİHİ"] + "
+";
+  text += "📄 İrsaliye: " + first["İRSALİYE NO"] + "
+";
+  text += "🚛 Plaka: " + first["PLAKA"] + "
+";
+  text += "📦 Stok: " + first["STOK ADI"] + "
+
+";
+
+  text += "🔗 *EŞLEŞMELER*
+";
+  items.forEach((i,idx)=>{
+    text += (idx+1)+") 🏷 Tedarikçi Lot: " + i["TEDARİKÇİ LOT"] + " | 🧾 Sanita Lot: " + i["SANİTA LOT NO"] + " | ⚖ " + i["MİKTAR"] + "
+";
+  });
+
+  text += "
+📊 *TOPLAM:* " + totalKg + " KG";
+  return encodeURIComponent(text);
+}
+
+function sendWhatsApp(first, items, totalKg){
+  const msg = buildWhatsAppText(first, items, totalKg);
+  window.open("https://wa.me/?text=" + msg, "_blank");
 }
 
 function buildWhatsAppText(first, items, totalKg){
@@ -257,7 +321,10 @@ function search(){
       <div class="total">TOPLAM: ${totalKg} KG</div>
 
       <div class="sectionTitle">EŞLEŞMELER</div>
-      <div class="relationWrap">${relations}</div>
+
+      <div class="relationWrap">
+        ${relations}
+      </div>
 
       <button class="whatsappBtn" onclick='sendWhatsApp(${JSON.stringify(first)}, ${JSON.stringify(items)}, ${totalKg})'>📤 WhatsApp Gönder</button>
     `;
