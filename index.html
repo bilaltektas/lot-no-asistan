@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lot Tracking Ultra UI</title>
+<title>Lot Trace Ultimate UI</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
@@ -12,94 +12,129 @@
 body {
   margin:0;
   font-family: Inter;
-  background: radial-gradient(circle at top, #0f172a, #020617);
+  background: radial-gradient(circle at top, #0b0f1a, #020617);
   color:#fff;
 }
 
 .header {
-  padding:20px;
   text-align:center;
+  padding:20px;
   font-size:22px;
   font-weight:700;
-  background: linear-gradient(90deg,#38bdf8,#6366f1);
+  background: linear-gradient(90deg,#38bdf8,#a78bfa);
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
 }
 
-.status { text-align:center; font-size:13px; opacity:0.7; }
-.searchBox { padding:15px; }
+.searchWrap {
+  padding:20px;
+}
+
+.searchBox {
+  position:relative;
+}
 
 input {
-  width:100%; padding:16px; border-radius:16px; border:none;
-  outline:none; font-size:16px; color:#fff;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(12px);
+  width:100%;
+  padding:18px 20px;
+  border-radius:18px;
+  border:none;
+  outline:none;
+  font-size:17px;
+  color:#fff;
+  background: linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
 }
 
 .grid { padding:10px; }
 
 .card {
-  margin:14px; padding:18px; border-radius:20px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  margin:14px;
+  padding:20px;
+  border-radius:22px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
   backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  animation: fade 0.4s ease;
+  box-shadow: 0 15px 50px rgba(0,0,0,0.6);
 }
 
-@keyframes fade {
-  from {opacity:0; transform:translateY(20px)}
-  to {opacity:1; transform:translateY(0)}
+.title {
+  font-size:18px;
+  font-weight:700;
+  color:#38bdf8;
 }
 
-.title { font-weight:700; font-size:18px; color:#38bdf8; }
-
-.box {
-  margin-top:10px; padding:12px; border-radius:14px;
-  background: rgba(56,189,248,0.08);
+.sectionTitle {
+  margin-top:15px;
+  font-size:13px;
+  opacity:0.7;
 }
 
-.small { font-size:13px; opacity:0.85; margin-top:6px; }
+.relationWrap {
+  margin-top:10px;
+  position:relative;
+}
 
-.relation {
-  display:flex; align-items:center; justify-content:center;
-  gap:12px; margin-top:12px; flex-wrap:wrap;
+.relationRow {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:18px 0;
+  position:relative;
 }
 
 .lotBox {
-  padding:10px 16px; border-radius:14px;
+  width:40%;
+  padding:12px;
+  text-align:center;
+  border-radius:14px;
   background: linear-gradient(135deg,#1e3a8a,#0ea5e9);
-  font-size:13px; font-weight:600;
-  box-shadow:0 6px 20px rgba(0,0,0,0.5);
+  transition:0.3s;
 }
 
-.equal {
-  font-size:20px; font-weight:700; color:#22d3ee;
-  animation: pulse 1.5s infinite;
+.lotBox:hover {
+  transform:scale(1.05);
+  box-shadow:0 0 20px #38bdf8;
 }
 
-@keyframes pulse {
-  0%,100% {opacity:0.5}
-  50% {opacity:1}
+.line {
+  position:absolute;
+  left:30%;
+  right:30%;
+  height:2px;
+  background: linear-gradient(90deg,#38bdf8,#a78bfa);
+  animation: flow 2s linear infinite;
+}
+
+@keyframes flow {
+  0% {background-position:0%}
+  100% {background-position:100%}
 }
 
 .total {
-  margin-top:12px;
-  padding:10px;
+  margin-top:15px;
+  padding:12px;
   border-radius:12px;
+  text-align:center;
   background: linear-gradient(90deg,#22d3ee,#6366f1);
   font-weight:600;
-  text-align:center;
+}
+
+.meta {
+  font-size:13px;
+  opacity:0.8;
+  margin-top:6px;
 }
 
 </style>
 </head>
 <body>
 
-<div class="header">LOT TRACE SYSTEM</div>
-<div class="status" id="status">Yükleniyor...</div>
+<div class="header">LOT TRACE ULTIMATE</div>
 
-<div class="searchBox">
-<input id="search" placeholder="Lot gir..." oninput="search()" />
+<div class="searchWrap">
+  <div class="searchBox">
+    <input id="search" placeholder="Lot gir (Sanita / Tedarikçi)" oninput="search()">
+  </div>
 </div>
 
 <div id="result" class="grid"></div>
@@ -122,21 +157,17 @@ Papa.parse(url, {
   header:true,
   complete:(res)=>{
     data = res.data.map(normalize);
-    document.getElementById("status").innerText = "Veri: " + data.length;
   }
 });
 
 function parseKg(val){
-  if(!val) return 0;
-  return parseFloat(val.replace("KG","").replace(",",".").trim()) || 0;
+  return parseFloat((val||"").replace("KG","").trim()) || 0;
 }
 
 function search(){
-
   const val = document.getElementById("search").value.toUpperCase().trim();
   const out = document.getElementById("result");
   out.innerHTML = "";
-
   if(!val) return;
 
   const filtered = data.filter(r =>
@@ -147,7 +178,7 @@ function search(){
   const grouped = {};
 
   filtered.forEach(r => {
-    const key = r["TEDARİKÇİ LOT"] || r["SANİTA LOT NO"];
+    const key = r["TEDARİKÇİ LOT"];
     if(!grouped[key]) grouped[key] = [];
     grouped[key].push(r);
   });
@@ -163,32 +194,31 @@ function search(){
     card.className = "card";
 
     let relations = items.map(i => `
-      <div class="relation">
-        <div class="lotBox">${i["TEDARİKÇİ LOT"]}</div>
-        <div class="equal">=</div>
-        <div class="lotBox">${i["SANİTA LOT NO"]}</div>
+      <div class="relationRow">
+        <div class="lotBox">${i["TEDARİKÇİ LOT"]}<br><small>Tedarikçi Lot</small></div>
+        <div class="line"></div>
+        <div class="lotBox">${i["SANİTA LOT NO"]}<br><small>Sanita Lot</small></div>
       </div>
     `).join("");
 
     card.innerHTML = `
       <div class="title">${first["TEDARİKÇİ"]}</div>
 
-      <div class="box">
-        📅 ${first["GELİŞ TARİHİ"]}<br>
-        📦 ${first["STOK ADI"]}
-      </div>
-
-      <div class="small">🏢 ${first["KULLANILACAK FİRMA"]}</div>
-      <div class="small">📄 ${first["İRSALİYE NO"]}</div>
-      <div class="small">🚛 ${first["PLAKA"]}</div>
+      <div class="meta">📅 ${first["GELİŞ TARİHİ"]}</div>
+      <div class="meta">📦 ${first["STOK ADI"]}</div>
+      <div class="meta">📄 ${first["İRSALİYE NO"]}</div>
+      <div class="meta">🚛 ${first["PLAKA"]}</div>
 
       <div class="total">TOPLAM: ${totalKg} KG</div>
 
-      ${relations}
+      <div class="sectionTitle">EŞLEŞMELER</div>
+
+      <div class="relationWrap">
+        ${relations}
+      </div>
     `;
 
     out.appendChild(card);
-
   });
 }
 
